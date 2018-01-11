@@ -3,49 +3,13 @@ import numpy as np
 import pandas as pd
 import random 
 
-_SIZE = 7 #can be changed
-_FRACTION = (0.5, 0.7)
-
-_outfile = "gamestats.txt"
-
-def generate_init_grid(_SIZE):
-    '''
-    drop-7 starting grid with a few rules.
-    
-    Explode as needed (vertical)
-    Explode as needed (horizontal)
-    '''
-    grid = np.zeros((_SIZE,_SIZE), dtype=np.int) # Example array
-    
-    for x in np.nditer(grid, op_flags=['readwrite']):
-        #generate a U(0,1). If it is less than _fraction, then get a random integer from 1..7
-        if random.random() <= random.uniform(_FRACTION[0], _FRACTION[1]):
-            x[...] = random.randint(1,_SIZE) #ellipsis will modify the right element
-    
-    #apply gravity to each column
-    for colnum in range(grid.shape[1]):
-        _,_, new = apply_gravity_to_column(grid[:, colnum])
-        grid[ :, colnum] = new
-    
-    return grid
+import cfg
 
 
-
-def row(grid, rnum, _string):
-    grid[_SIZE-1-rnum, :] = list(_string)
-    return grid
-    
-def zerow(grid, rnum):
-    grid[_SIZE-1-rnum,:] = list('0')*_SIZE
-
-def zecol(grid, cnum):
-    grid[:, cnum] = list('0')*_SIZE
-
-def grid_of_zeros(size=_SIZE):
-    return np.zeros((size,size), dtype=np.int)
-
-def grid_of_ones(size=_SIZE):
+def grid_of_ones(size=cfg._SIZE):
     return np.ones((size,size), dtype=np.int)
+
+
 
 def apply_gravity_to_column(column):
     '''
@@ -137,7 +101,7 @@ def nz(grid):
 
 def is_grid_full(grid):
     nz = np.count_nonzero(grid)
-    return nz == (_SIZE * _SIZE)
+    return nz == (cfg._SIZE * cfg._SIZE)
     
 def drop_ball_in_column(grid, col, ball):
     '''
@@ -164,30 +128,6 @@ def drop_ball_in_column(grid, col, ball):
 
 
 
-
-def top_row_occupied(grid, _SIZE):
-    return np.count_nonzero(grid[0, :])
-
-def level_up(grid):
-    '''
-    Add a row of balls to the bottom of the grid.
-    If the top row has any ball, Game Over
-    '''
-    # if top row has something, return grid and gameover
-    if(top_row_occupied(grid, _SIZE)):
-        return grid, 1 #game over
-        
-        
-    original = grid.copy()
-    for i in range(_SIZE - 1):
-        grid[i, :] = original[i+1, :] # move the row up
-        
-
-    grid[-1, : ] = np.random.randint(low=1, high=_SIZE+1, size=(1, _SIZE))
-            
-    
-    return grid, 0
-
 ###############################
 ####### UPDATING GRID #########
 ###############################
@@ -199,14 +139,14 @@ def apply_explosions_to_grid(grid, s, chain_level):
     
     # for each row, calculate explosions (but don't execute them)
     # for each col, caluclate explosions (but don't execute them)
-    row_mask, col_mask = grid_of_ones(_SIZE), grid_of_ones(_SIZE)
-    for i in range(_SIZE):
+    row_mask, col_mask = grid_of_ones(cfg._SIZE), grid_of_ones(cfg._SIZE)
+    for i in range(cfg._SIZE):
         _, _, row_mask[i, :] = inplace_explosions(grid[i, :])
         _, _, col_mask[:, i] = inplace_explosions(grid[:, i])
         
         
     # Executing all the explosions at once  
-    for i in range(_SIZE):
+    for i in range(cfg._SIZE):
         grid[i, :] = grid[i, :] * row_mask[i, :]
         grid[:, i] = grid[:, i] * col_mask[:, i]
         
@@ -218,7 +158,7 @@ def apply_explosions_to_grid(grid, s, chain_level):
     #    print(original, grid)
 
     if chain_level>1:
-        print("Chain Level:", chain_level, file=open(_outfile, "a"))
+        print("Chain Level:", chain_level, file=open(cfg._outfile, "a"))
         s.award_points(chain_level, explosions)
     return(grid)
 
@@ -226,7 +166,7 @@ def apply_explosions_to_grid(grid, s, chain_level):
 def apply_gravity_to_grid(grid):    
     
     original = grid.copy()
-    for i in range(_SIZE):
+    for i in range(cfg._SIZE):
         _,_,grid[:, i] = apply_gravity_to_column(grid[:, i])
             
             
