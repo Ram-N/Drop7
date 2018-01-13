@@ -57,6 +57,14 @@ def generate_next_ball(size):
     return random.randint(1,size)
 
 
+def generate_random_row(_size):
+    return np.random.randint(low=1, high=_size+1, size=(1, _size))
+
+
+def generate_fixed_row(_size, fixed_num):
+	return np.asarray([fixed_num,]*_size)
+
+
 def top_row_occupied(grid):
     return np.count_nonzero(grid[0, :])
 
@@ -79,8 +87,8 @@ def level_up(grid):
         grid[i, :] = original[i+1, :] # move the row up
         
 
-    grid[-1, : ] = np.random.randint(low=1, high=cfg._SIZE+1, size=(1, cfg._SIZE))
-            
-    
-    return grid, 0
+    grid[-1, : ] = generate_random_row(cfg._SIZE)
+    grid[-1, : ] = generate_fixed_row(cfg._SIZE, -2)
+
+    return grid, 0 #game is not over
 

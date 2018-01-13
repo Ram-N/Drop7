@@ -17,7 +17,7 @@ class _Stats(object):
     def ball_drop():
         _Stats.ball_count += 1
         
-    def level_up():
+    def incr_level_count():
         _Stats.levelup_count += 1
         
     def award_points(chain_level, explosions):

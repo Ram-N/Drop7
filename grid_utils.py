@@ -64,6 +64,39 @@ def blank_out(_num, vec):
 
 def inplace_explosions(vec):
     
+    exp_occurred = False
+    
+    original = [x for x in vec] #manually creating a deepcopy
+    updated_vec = [x for x in vec] #manually creating a deepcopy
+
+    ml = get_mask_lengths(updated_vec) # number of contiguous non-zeros
+        #print(ml)
+    start, end = 0, 0
+    for piece in ml:
+        _facevalue, _runlen = piece[0], piece[1]
+        start = end
+        end = start + _runlen
+        #print(vec[start:end])
+        if _facevalue: #True, nonzero elements exist        
+            seg = updated_vec[start:end]
+            exploded_seg = blank_out(_runlen, seg)
+            if(seg != exploded_seg):
+                exp_occurred = True
+                updated_vec[start:end] = exploded_seg[:]
+
+    #this is a list of all the elements that remained unchanged. This is the !MASK of changes            
+    unchanged = [1 if i==j else 0 for i,j in zip(original, updated_vec)]
+                
+    # print("Exp occurred", exp_occurred)
+    return (exp_occurred, original, unchanged)
+
+def _orig_inplace_explosions(vec):
+    """
+    In this def, we loop until ALL the explosions are taken care of.
+    But the 'right' way to do it seems to be to do one pass.
+    Then return the mask. Apply Gravity etc. and come back here.
+    """
+
     potential = True
     exp_occurred = False
     
@@ -94,7 +127,6 @@ def inplace_explosions(vec):
 
 
 
-
      
 def nz(grid):
     return np.count_nonzero(grid)
@@ -103,7 +135,7 @@ def is_grid_full(grid):
     nz = np.count_nonzero(grid)
     return nz == (cfg._SIZE * cfg._SIZE)
     
-def drop_ball_in_column(grid, col, ball):
+def drop_ball_in_column(grid, ball, col):
     '''
     If valid column, find the first zero in the column and replace the value there.
     If column is full, return illegal flag
@@ -150,17 +182,22 @@ def apply_explosions_to_grid(grid, s, chain_level):
         grid[i, :] = grid[i, :] * row_mask[i, :]
         grid[:, i] = grid[:, i] * col_mask[:, i]
         
+    #print("Came in with", original)
+    #print("ROW MASK", row_mask)
+    #print("COL MASK", col_mask)    
+    #print("After applying Explosions", original, grid)
 
     #Explosions is the NUMBER of BALLS that EXPLODE at a give grid configuration
     explosions = np.count_nonzero(original!=grid)
     # print("Explosions", explosions)
     # if explosions == 2:
     #    print(original, grid)
-
+    explosions_done = (explosions == 0)
     if chain_level>1:
         print("Chain Level:", chain_level, file=open(cfg._outfile, "a"))
         s.award_points(chain_level, explosions)
-    return(grid)
+
+    return(grid, explosions_done)
 
 
 def apply_gravity_to_grid(grid):    
@@ -175,11 +212,11 @@ def apply_gravity_to_grid(grid):
 
 def update_grid(grid, s):
 
-    stop_flag = 0
+    gravity_done, explosions_done = 0, 0
     chain_level = 0
-    while not stop_flag:
+    while not (gravity_done and explosions_done):
         chain_level += 1
-        grid = apply_explosions_to_grid(grid, s, chain_level)
-        grid, stop_flag = apply_gravity_to_grid(grid)
-    
+        grid, explosions_done = apply_explosions_to_grid(grid, s, chain_level)
+        grid, gravity_done = apply_gravity_to_grid(grid)
+        # print("In update grid", explosions_done, gravity_done)
     return grid
